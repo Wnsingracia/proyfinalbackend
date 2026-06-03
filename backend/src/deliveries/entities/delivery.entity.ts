@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, DeleteDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, DeleteDateColumn } from 'typeorm';
 
 @Entity('deliveries')
 export class Delivery {
-  @PrimaryGeneratedColumn()
+  @PrimaryColumn()
   id_delivery: number = 0;
 
   @Column({ type: 'varchar', length: 100, nullable: false })

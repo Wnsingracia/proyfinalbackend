@@ -3,9 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../users/entities/user.entity';
 import { LogAcceso } from 'src/logs/entities/logs.entity';
-import { Delivery } from '../deliveries/entities/delivery.entity'; // <-- Añadido
-import { Stock } from '../deliveries/entities/stock.entity';       // <-- Añadido
-import { Producto } from 'src/products/entities/products.entity';   // <-- Añadido
+import { Delivery } from '../deliveries/entities/delivery.entity'; 
+import { Stock } from '../deliveries/entities/stock.entity';      
+import { Producto } from 'src/products/entities/products.entity';   
 import { LoginDto, RegistroDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -16,7 +16,7 @@ export class AuthService {
     @InjectRepository(Usuario) private readonly usuarioRepo: Repository<Usuario>,
     @InjectRepository(LogAcceso) private readonly logRepo: Repository<LogAcceso>,
     
-    // Inyección de los repositorios necesarios para automatizar la derivación por rol
+    // Inyección de los repositorios para automatizar la derivación por rol
     @InjectRepository(Delivery) private readonly deliveryRepo: Repository<Delivery>,
     @InjectRepository(Stock) private readonly stockRepo: Repository<Stock>,
     @InjectRepository(Producto) private readonly productoRepo: Repository<Producto>,
@@ -28,18 +28,19 @@ export class AuthService {
    * Evalúa la robustez de la contraseña (Requerimiento del proyecto)
    */
   private evaluarFuerzaPassword(password: string): 'DEBIL' | 'INTERMEDIO' | 'FUERTE' {
-    const tieneLetras = /[a-zA-Z]/.test(password);
-    const tieneNumeros = /[0-9]/.test(password);
-    const tieneEspeciales = /[^a-zA-Z0-9]/.test(password);
+    const pass = password || '';
+    const tieneLetras = /[a-zA-Z]/.test(pass);
+    const tieneNumeros = /[0-9]/.test(pass);
+    const tieneEspeciales = /[^a-zA-Z0-9]/.test(pass);
 
-    if (password.length >= 10 && tieneLetras && tieneNumeros && tieneEspeciales) return 'FUERTE';
-    if (password.length >= 8 && tieneLetras && tieneNumeros) return 'INTERMEDIO';
+    if (pass.length >= 10 && tieneLetras && tieneNumeros && tieneEspeciales) return 'FUERTE';
+    if (pass.length >= 8 && tieneLetras && tieneNumeros) return 'INTERMEDIO';
     return 'DEBIL';
   }
 
   /**
    * MÉTODO: registro
-   * Crea un nuevo usuario y automatiza la inserción espejo de sucursal y stock si es DELIVERY
+   * Crea un nuevo usuario y automatiza la inserción espejo de sucursal y stocks en cero
    */
   async registro(registroDto: RegistroDto, ip: string, browser: string) {
     // 1. Verificación del captchaToken con la petición de React
@@ -59,7 +60,7 @@ export class AuthService {
       throw new BadRequestException('La contraseña es demasiado débil. Debe contener al menos letras y números.');
     }
 
-    // 4. Encriptar contraseña (Guardado seguro)
+    // 4. Encriptar contraseña de forma segura (Bcrypt Hashing)
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(registroDto.password, salt);
 
@@ -74,44 +75,54 @@ export class AuthService {
     const usuarioGuardado = await this.usuarioRepo.save(nuevoUsuario);
 
     // =============================================================================
-    // FLUJO AUTOMATIZADO DE DERIVACIÓN POR ROL: 'DELIVERY'
+    // FLUJO AUTOMATIZADO EXCLUSIVO PARA EL ROL: 'DELIVERY'
+    // =============================================================================
+    // =============================================================================
+    // FLUJO AUTOMATIZADO EXCLUSIVO PARA EL ROL: 'DELIVERY' (Blindado contra FK)
     // =============================================================================
     if (registroDto.rol === 'DELIVERY') {
-      // Validamos que el JSON de React traiga los datos obligatorios para armar la sucursal
       if (!registroDto.nombre_sucursal) {
         throw new BadRequestException('Para el rol DELIVERY, el nombre de la sucursal es obligatorio');
       }
 
-      // A) Insertar fila espejo en la tabla 'deliveries' clonando el id_usuario generado
+      // 1. Creamos la instancia del Delivery usando la instancia de usuario recién guardada
+      // En lugar de pasar el ID numérico plano, pasamos el objeto entero 'usuarioGuardado'
+      // para que TypeORM entienda la relación de herencia de llaves.
       const nuevoDelivery = this.deliveryRepo.create({
-        id_delivery: usuarioGuardado.id_usuario, // Relación Identificativa (PK y FK compartidas)
+        id_delivery: usuarioGuardado.id_usuario,
         nombre_sucursal: registroDto.nombre_sucursal,
         direccion: registroDto.direccion || '',
       });
-      await this.deliveryRepo.save(nuevoDelivery);
 
-      // B) Cargar de forma masiva todos los productos para inicializar sus stocks en cero
-      const todosLosProductos = await this.productoRepo.find({ select: {id_producto: true} });
+      // 2. Persistimos el delivery de forma tradicional esperándolo con await
+      const deliveryGuardado = await this.deliveryRepo.save(nuevoDelivery);
+
+      // 3. Cargamos los productos existentes del catálogo
+      const todosLosProductos = await this.productoRepo.find({ select: { id_producto: true } });
       
       if (todosLosProductos.length > 0) {
+        // 4. Creamos las entidades de stock mapeadas de forma explícita
         const stocksIniciales = todosLosProductos.map((prod) => {
           return this.stockRepo.create({
-            id_delivery: usuarioGuardado.id_usuario,
+            id_delivery: deliveryGuardado.id_delivery, // Usamos la propiedad confirmada de la sucursal guardada
             id_producto: prod.id_producto,
-            cantidad: 0, // Se inicializan listos en cero
+            cantidad: 0,
           });
         });
         
-        // Inserción en lote (Bulk Insert) para ahorrar recursos de red
+        // 5. Salvamos los stocks utilizando el Repositorio Nativo
+        // Al usar .save() con instancias creadas mediante .create(), TypeORM sabe
+        // que debe sincronizar la transacción con Postgres antes de evaluar las FKs.
         await this.stockRepo.save(stocksIniciales);
       }
     }
 
+    // Retorno limpio del método en su lugar correcto (Fuera del bloque If)
     return { 
       mensaje: 'Usuario registrado con éxito', 
       fuerzaPassword: nivel,
       id_usuario: usuarioGuardado.id_usuario,
-      configuracionExtra: registroDto.rol === 'DELIVERY' ? 'Sucursal e inventario inicializado' : 'Ninguna'
+      configuracionExtra: registroDto.rol === 'DELIVERY' ? 'Sucursal e inventario inicializado en cero' : 'Ninguna'
     };
   }
 

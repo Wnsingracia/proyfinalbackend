@@ -87,7 +87,7 @@ export default function RepartidorPanel({ alCerrarSesion }: RepartidorPanelProps
           <div className="grid grid-cols-2 gap-2">
             
             {/* 1. VISTA DE DESPACHO: Visible para DELIVERIES y ADMINISTRADORES */}
-            {(usuarioLogueado.rol === 'DELIVERY' || usuarioLogueado.rol === 'ADMINISTRADOR') && (
+            {(usuarioLogueado.rol === 'DELIVERY') && (
               <>
                 <button 
                   type="button" 
@@ -108,7 +108,7 @@ export default function RepartidorPanel({ alCerrarSesion }: RepartidorPanelProps
             )}
 
             {/* 2. VISTA DE VENTAS: Visible para VENDEDORES y ADMINISTRADORES */}
-            {(usuarioLogueado.rol === 'VENDEDOR' || usuarioLogueado.rol === 'ADMINISTRADOR') && (
+            {(usuarioLogueado.rol === 'VENDEDOR') && (
               <button 
                 type="button" 
                 onClick={() => setVistaActual('VENDEDORES')} 

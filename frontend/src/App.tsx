@@ -12,9 +12,10 @@ function App() {
         // Si el usuario ya ingresó con éxito, ve el panel móvil del repartidor
         <RepartidorPanel/>
       ) : (
-        // Si no está autenticado, ve la pantalla de Login con el CAPTCHA gráfico
-        // Le pasamos una función para que el botón "Ingresar" cambie el estado a true
+        
+        <div className='min-h-screen w-screen bg-[#09080d] flex items-center justify-center p-4'>
         <LoginPanel alIngresar={() => setEstaAutenticado(true)} />
+        </div>
       )}
     </>
   )

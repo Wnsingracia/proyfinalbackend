@@ -37,7 +37,7 @@ async actualizarStock(idDelivery: number, dto: UpdateStockDto) {
   if (stockExistente) {
     // REGLA: Si mandas un número positivo, SUMA. Si mandas un número negativo, RESTA.
     // Esto te sirve tanto para reabastecer (+50) como para registrar una venta (-2)
-    stockExistente.cantidad += cantidad;
+    stockExistente.cantidad = cantidad;
 
     // Validación de seguridad obligatoria para el negocio:
     if (stockExistente.cantidad < 0) {
