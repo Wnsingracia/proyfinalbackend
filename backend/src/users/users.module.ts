@@ -1,9 +1,16 @@
 import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsuariosService } from './users.service';
+import { UsuariosController } from './users.controller';
+import { Usuario } from './entities/user.entity';
 
 @Module({
-  controllers: [UsersController],
-  providers: [UsersService]
+  imports: [
+    // Registramos la entidad para que NestJS genere el repositorio dinámico
+    TypeOrmModule.forFeature([Usuario])
+  ],
+  controllers: [UsuariosController],
+  providers: [UsuariosService],
+  exports: [UsuariosService] // Lo exportamos por si necesitas validar usuarios en otros módulos (como Ventas o Login)
 })
-export class UsersModule {}
+export class UsuariosModule {}

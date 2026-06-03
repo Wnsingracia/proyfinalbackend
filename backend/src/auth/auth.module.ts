@@ -6,9 +6,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { Usuario } from '../users/entities/user.entity';
 import { LogAcceso } from 'src/logs/entities/logs.entity';
+import { Delivery } from 'src/deliveries/entities/delivery.entity';
+import { Stock } from 'src/deliveries/entities/stock.entity';
+import { Producto } from 'src/products/entities/products.entity';
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario, LogAcceso]),
+    TypeOrmModule.forFeature([Usuario, LogAcceso, Delivery, Stock, Producto]),
     
     // 2. Registrar el JWT con tus configuraciones
     JwtModule.register({

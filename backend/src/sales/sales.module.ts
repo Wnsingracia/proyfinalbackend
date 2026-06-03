@@ -1,9 +1,18 @@
+// src/ventas/ventas.module.ts
 import { Module } from '@nestjs/common';
-import { SalesController } from './sales.controller';
-import { SalesService } from './sales.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { VentasService } from './sales.service';
+import { VentasController } from './sales.controller';
+import { Venta } from './entities/sales.entity';
+import { DetallesVentasModule } from 'src/detalle_venta/detalle_venta.module'; // Importante
+import { Producto } from 'src/products/entities/products.entity';
 
 @Module({
-  controllers: [SalesController],
-  providers: [SalesService]
+  imports: [
+    TypeOrmModule.forFeature([Venta, Producto]),
+    DetallesVentasModule // <-- Vinculamos el módulo secundario aquí
+  ],
+  controllers: [VentasController],
+  providers: [VentasService]
 })
-export class SalesModule {}
+export class VentasModule {}

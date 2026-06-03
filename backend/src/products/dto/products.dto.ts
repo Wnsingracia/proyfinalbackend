@@ -9,6 +9,9 @@ export class CreateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio base debe ser un número válido' })
   @Min(0, { message: 'El precio base no puede ser negativo' })
   precio_base: number = 0;
+  @IsOptional()
+  @IsString()
+  url_imagen?: string;
 }
 
 export class UpdateProductDto {

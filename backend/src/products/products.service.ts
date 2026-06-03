@@ -22,7 +22,7 @@ export class ProductsService {
 
     async inserta(productoDTO: CreateProductDto){
         const producto=this.repositorio.create(productoDTO);
-        return await this.repositorio.save
+        return await this.repositorio.save(producto)
     }
 
     async actualiza(id: number, productoDTO: UpdateProductDto){

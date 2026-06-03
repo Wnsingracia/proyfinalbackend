@@ -1,5 +1,6 @@
-import { IsArray, IsInt, IsNotEmpty, Min, ValidateNested } from "class-validator";
+import { IsNumber, IsArray, IsInt, IsNotEmpty, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
+import { CreateDetalleVentaDto } from "src/detalle_venta/dto/detall_venta.dto";
 
 export class SaleDetailDto {
   @IsNotEmpty({ message: 'El ID del producto es obligatorio' })
@@ -12,17 +13,23 @@ export class SaleDetailDto {
   cant_vendida: number = 0;
 }
 
-export class CreateSaleDto {
-  @IsNotEmpty({ message: 'El ID de la sucursal (delivery) es obligatorio' })
-  @IsInt({ message: 'El ID de la sucursal debe ser un entero' })
+export class CreateVentaDto {
+  @IsNotEmpty()
+  @IsInt()
   id_delivery: number = 0;
 
-  @IsNotEmpty({ message: 'El ID del vendedor es obligatorio' })
-  @IsInt({ message: 'El ID del vendedor debe ser un entero' })
+  @IsNotEmpty()
+  @IsInt()
   id_vendedor: number = 0;
 
-  @IsArray({ message: 'Los detalles de la venta deben ser una lista' })
-  @ValidateNested({ each: true })
-  @Type(() => SaleDetailDto)
-  detalles: SaleDetailDto[] = [];
+  @IsNotEmpty()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  precio_total_venta: number = 0;
+
+  // AGREGAMOS EL ARRAY DE PRODUCTOS COMPRADOS
+  @IsArray()
+  @ValidateNested({ each: true }) // <-- Solo necesitas 'each: true' para que valide cada objeto del arreglo
+  @Type(() => CreateDetalleVentaDto)
+  productos!: CreateDetalleVentaDto[];
 }

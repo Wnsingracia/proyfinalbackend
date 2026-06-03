@@ -1,4 +1,4 @@
-import { IsEnum, IsEmail, IsNotEmpty, IsString, Length } from "class-validator";
+import { IsOptional, IsEnum, IsEmail, IsNotEmpty, IsString, Length } from "class-validator";
 
 export class LoginDto {
   @IsNotEmpty({ message: 'El correo electrónico no puede estar vacío' })
@@ -28,10 +28,21 @@ export class RegistroDto {
   password: string = "";
 
   @IsNotEmpty({ message: 'El rol no puede estar vacío' })
-  @IsEnum(['ADMINISTRADOR', 'VENDEDOR'], { message: 'El rol debe ser ADMINISTRADOR o VENDEDOR' })
-  rol: 'ADMINISTRADOR' | 'VENDEDOR' = 'VENDEDOR';
+  // Corregido: Se añade 'DELIVERY' al arreglo del validador para que acepte repartidores
+  @IsEnum(['ADMINISTRADOR', 'VENDEDOR', 'DELIVERY'], { 
+    message: 'El rol debe ser ADMINISTRADOR, VENDEDOR o DELIVERY' 
+  })
+  rol: 'ADMINISTRADOR' | 'VENDEDOR' | 'DELIVERY' = 'VENDEDOR';
 
   @IsNotEmpty({ message: 'El token del CAPTCHA es obligatorio para el registro' })
   @IsString()
   captchaToken: string = "";
+
+  @IsOptional()
+  @IsString()
+  nombre_sucursal?: string;
+
+  @IsOptional()
+  @IsString()
+  direccion?: string;
 }

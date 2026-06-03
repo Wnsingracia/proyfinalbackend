@@ -3,7 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../users/entities/user.entity';
 import { LogAcceso } from 'src/logs/entities/logs.entity';
-import { LoginDto, RegistroDto } from './dto/auth.dto'; // Asegúrate de que esta ruta sea la de tu archivo unificado
+import { Delivery } from '../deliveries/entities/delivery.entity'; // <-- Añadido
+import { Stock } from '../deliveries/entities/stock.entity';       // <-- Añadido
+import { Producto } from 'src/products/entities/products.entity';   // <-- Añadido
+import { LoginDto, RegistroDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
@@ -12,6 +15,12 @@ export class AuthService {
   constructor(
     @InjectRepository(Usuario) private readonly usuarioRepo: Repository<Usuario>,
     @InjectRepository(LogAcceso) private readonly logRepo: Repository<LogAcceso>,
+    
+    // Inyección de los repositorios necesarios para automatizar la derivación por rol
+    @InjectRepository(Delivery) private readonly deliveryRepo: Repository<Delivery>,
+    @InjectRepository(Stock) private readonly stockRepo: Repository<Stock>,
+    @InjectRepository(Producto) private readonly productoRepo: Repository<Producto>,
+    
     private readonly jwtService: JwtService,
   ) {}
 
@@ -30,10 +39,10 @@ export class AuthService {
 
   /**
    * MÉTODO: registro
-   * Crea un nuevo usuario validando CAPTCHA y encriptando su password
+   * Crea un nuevo usuario y automatiza la inserción espejo de sucursal y stock si es DELIVERY
    */
   async registro(registroDto: RegistroDto, ip: string, browser: string) {
-    // 1. Aquí irá tu lógica de verificación del captchaToken con la API externa si es necesario
+    // 1. Verificación del captchaToken con la petición de React
     if (!registroDto.captchaToken) {
       throw new BadRequestException('El token del CAPTCHA es inválido o expiró');
     }
@@ -54,7 +63,7 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(registroDto.password, salt);
 
-    // 5. Construir y guardar entidad
+    // 5. Construir y guardar entidad del Usuario Base
     const nuevoUsuario = this.usuarioRepo.create({
       nombre: registroDto.nombre,
       email: registroDto.email,
@@ -62,11 +71,47 @@ export class AuthService {
       rol: registroDto.rol,
     });
     
-    await this.usuarioRepo.save(nuevoUsuario);
+    const usuarioGuardado = await this.usuarioRepo.save(nuevoUsuario);
+
+    // =============================================================================
+    // FLUJO AUTOMATIZADO DE DERIVACIÓN POR ROL: 'DELIVERY'
+    // =============================================================================
+    if (registroDto.rol === 'DELIVERY') {
+      // Validamos que el JSON de React traiga los datos obligatorios para armar la sucursal
+      if (!registroDto.nombre_sucursal) {
+        throw new BadRequestException('Para el rol DELIVERY, el nombre de la sucursal es obligatorio');
+      }
+
+      // A) Insertar fila espejo en la tabla 'deliveries' clonando el id_usuario generado
+      const nuevoDelivery = this.deliveryRepo.create({
+        id_delivery: usuarioGuardado.id_usuario, // Relación Identificativa (PK y FK compartidas)
+        nombre_sucursal: registroDto.nombre_sucursal,
+        direccion: registroDto.direccion || '',
+      });
+      await this.deliveryRepo.save(nuevoDelivery);
+
+      // B) Cargar de forma masiva todos los productos para inicializar sus stocks en cero
+      const todosLosProductos = await this.productoRepo.find({ select: {id_producto: true} });
+      
+      if (todosLosProductos.length > 0) {
+        const stocksIniciales = todosLosProductos.map((prod) => {
+          return this.stockRepo.create({
+            id_delivery: usuarioGuardado.id_usuario,
+            id_producto: prod.id_producto,
+            cantidad: 0, // Se inicializan listos en cero
+          });
+        });
+        
+        // Inserción en lote (Bulk Insert) para ahorrar recursos de red
+        await this.stockRepo.save(stocksIniciales);
+      }
+    }
 
     return { 
       mensaje: 'Usuario registrado con éxito', 
-      fuerzaPassword: nivel 
+      fuerzaPassword: nivel,
+      id_usuario: usuarioGuardado.id_usuario,
+      configuracionExtra: registroDto.rol === 'DELIVERY' ? 'Sucursal e inventario inicializado' : 'Ninguna'
     };
   }
 

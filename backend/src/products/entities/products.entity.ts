@@ -19,4 +19,7 @@ export class Producto {
 
   @DeleteDateColumn({ type: 'timestamp with time zone', nullable: true })
   deleted_at?: Date;
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+url_imagen: string | null = null;
 }
