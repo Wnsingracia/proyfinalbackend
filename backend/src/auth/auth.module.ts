@@ -5,10 +5,10 @@ import { JwtModule } from '@nestjs/jwt'; // <-- 1. Importar el módulo
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { Usuario } from '../users/entities/user.entity';
-import { LogAcceso } from 'src/logs/entities/logs.entity';
-import { Delivery } from 'src/deliveries/entities/delivery.entity';
-import { Stock } from 'src/deliveries/entities/stock.entity';
-import { Producto } from 'src/products/entities/products.entity';
+import { LogAcceso } from '../logs/entities/logs.entity';
+import { Delivery } from '../deliveries/entities/delivery.entity';
+import { Stock } from '../deliveries/entities/stock.entity';
+import { Producto } from '../products/entities/products.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Usuario, LogAcceso, Delivery, Stock, Producto]),
