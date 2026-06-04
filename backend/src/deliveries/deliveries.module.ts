@@ -5,7 +5,7 @@ import { DeliveriesService } from './deliveries.service';
 import { DeliveriesController } from './deliveries.controller';
 import { Delivery } from './entities/delivery.entity';
 import { Stock } from './entities/stock.entity'; 
-import { Producto } from 'src/products/entities/products.entity';
+import { Producto } from '../products/entities/products.entity';
 
 @Module({
   imports: [

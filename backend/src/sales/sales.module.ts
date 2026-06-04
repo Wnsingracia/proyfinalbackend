@@ -4,8 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { VentasService } from './sales.service';
 import { VentasController } from './sales.controller';
 import { Venta } from './entities/sales.entity';
-import { DetallesVentasModule } from 'src/detalle_venta/detalle_venta.module'; // Importante
-import { Producto } from 'src/products/entities/products.entity';
+import { DetallesVentasModule } from '../detalle_venta/detalle_venta.module'; // Importante
+import { Producto } from '../products/entities/products.entity';
 
 @Module({
   imports: [

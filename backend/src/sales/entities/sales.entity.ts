@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
-import { DetalleVenta } from 'src/detalle_venta/entity/detalle_venta.entity';
+import { DetalleVenta } from '../../detalle_venta/entity/detalle_venta.entity';
 
 @Entity('ventas')
 export class Venta {

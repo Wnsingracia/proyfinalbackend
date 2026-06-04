@@ -1,6 +1,6 @@
 import { IsNumber, IsArray, IsInt, IsNotEmpty, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
-import { CreateDetalleVentaDto } from "src/detalle_venta/dto/detall_venta.dto";
+import { CreateDetalleVentaDto } from "../../detalle_venta/dto/detall_venta.dto";
 
 export class SaleDetailDto {
   @IsNotEmpty({ message: 'El ID del producto es obligatorio' })

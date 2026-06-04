@@ -2,10 +2,10 @@ import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../users/entities/user.entity';
-import { LogAcceso } from 'src/logs/entities/logs.entity';
+import { LogAcceso } from '../logs/entities/logs.entity';
 import { Delivery } from '../deliveries/entities/delivery.entity'; 
 import { Stock } from '../deliveries/entities/stock.entity';      
-import { Producto } from 'src/products/entities/products.entity';   
+import { Producto } from '../products/entities/products.entity';   
 import { LoginDto, RegistroDto } from './dto/auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';

@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Venta } from 'src/sales/entities/sales.entity';
+import { Venta } from '../../sales/entities/sales.entity';
 // Importa tu entidad de Producto aquí (ejemplo ficticio de ruta)
-import { Producto } from 'src/products/entities/products.entity';
+import { Producto } from '../../products/entities/products.entity';
 
 @Entity('detalles_ventas')
 export class DetalleVenta {
