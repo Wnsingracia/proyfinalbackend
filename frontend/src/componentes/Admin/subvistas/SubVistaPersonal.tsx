@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import api from '../../../api/api'; // Tu instancia de Axios configurada
-import { UserPlus, TrendingUp } from 'lucide-react';
+import { UserPlus, TrendingUp, Trash2, Loader2 } from 'lucide-react';
 
 export default function SubVistaPersonal({ usuariosSistema, ventas, refrescarUsuarios, setError, setExito }: any) {
   // Estados locales para la gestión del inventario y formulario del personal
   const [usuarioAbierto, setUsuarioAbierto] = useState<number | null>(null);
   const [stocksUsuario, setStocksUsuario] = useState<any[]>([]);
   const [actualizandoId, setActualizandoId] = useState<number | null>(null);
+  const [eliminandoId, setEliminandoId] = useState<number | null>(null); // Loader de borrado individual
 
   const [nuevoUsuario, setNuevoUsuario] = useState({
     nombre: '',
@@ -31,16 +32,13 @@ export default function SubVistaPersonal({ usuariosSistema, ventas, refrescarUsu
 
     try {
       const respuesta = await api.post('/auth/registro', nuevoUsuario);
-      
       setExito(`¡Usuario creado! ${respuesta.data.mensaje || ''}`);
       
-      // Limpiamos el formulario tras el éxito
       setNuevoUsuario({
         nombre: '', email: '', password: '', rol: 'VENDEDOR',
         nombre_sucursal: '', direccion: '', captchaToken: 'TOKEN_MANUAL_ADMIN_BYPASS'
       });
       
-      // Notificamos al componente padre que refresque la nómina global
       refrescarUsuarios();
     } catch (err: any) {
       console.error("Error al registrar personal:", err);
@@ -49,26 +47,71 @@ export default function SubVistaPersonal({ usuariosSistema, ventas, refrescarUsu
     }
   };
 
+  // =============================================================================
+  // 🛡️ CONTROLADOR: Eliminación Lógica (Soft Delete) hacia NestJS
+  // =============================================================================
+  const handleEliminarUsuario = async (e: React.MouseEvent, idUsuario: number, nombreUsuario: string) => {
+    // Evita que al hacer clic en la basura se abra o cierre el acordeón de stock
+    e.stopPropagation(); 
+    setError('');
+    setExito('');
+
+    const confirmar = window.confirm(`¿Estás seguro de que deseas dar de baja a "${nombreUsuario}"? Conservará su historial de ventas pero ya no podrá acceder al sistema.`);
+    if (!confirmar) return;
+
+    setEliminandoId(idUsuario);
+    try {
+      // Disparamos el endpoint que ejecuta el softDelete() en tu repositorio de NestJS
+      const respuesta = await api.delete(`/usuarios/${idUsuario}`);
+      
+      setExito(respuesta.data.mensaje || `El empleado "${nombreUsuario}" fue dado de baja correctamente.`);
+      
+      // Si el usuario eliminado estaba desplegado, cerramos su pestaña
+      if (usuarioAbierto === idUsuario) setUsuarioAbierto(null);
+      
+      // Solicitamos la nómina fresca actualizada (donde TypeORM ya omitirá a este ID)
+      refrescarUsuarios();
+    } catch (err: any) {
+      console.error("Error al ejecutar eliminación lógica:", err);
+      const msg = err.response?.data?.message;
+      setError(msg || 'No se pudo dar de baja al usuario.');
+    } finally {
+      setEliminandoId(null);
+    }
+  };
+
+  // Modificación del stock en caliente (Asignación Directa)
   // Modificación del stock en caliente (Asignación Directa)
   const handleModificarCantidad = async (idUsuario: number, idProducto: number, nuevaCantidad: number) => {
+    // Sanitizamos para que sea un número entero válido
+    const valorNumerico = parseInt(nuevaCantidad.toString(), 10);
+    if (isNaN(valorNumerico) || valorNumerico < 0) return;
+
     setActualizandoId(idProducto);
     try {
+      // Atacamos el endpoint pasando el ID por parámetro de ruta en la URL
       await api.patch(`/deliveries/${idUsuario}/stock`, {
-        id_producto: idProducto,
-        cantidad: Number(nuevaCantidad)
+        // =============================================================================
+        // 🏁 MATCH PERFECTO CON TU SERVICE: Enviamos exactamente lo que desestructuras
+        // =============================================================================
+        id_producto: Number(idProducto),
+        cantidad: valorNumerico // Tu servicio asienta: stockExistente.cantidad = cantidad;
       });
       
-      // Refrescamos visualmente el input mutando el estado local
+      // Refrescamos visualmente el estado local en React
       setStocksUsuario(prev => 
-        prev.map(s => s.id_producto === idProducto ? { ...s, cantidad: nuevaCantidad } : s)
+        prev.map(s => s.id_producto === idProducto ? { ...s, cantidad: valorNumerico } : s)
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("No se pudo actualizar el stock en el backend:", err);
+      // Imprimimos la respuesta exacta del ValidationPipe de NestJS en consola si vuelve a fallar
+      if (err.response?.data) {
+        console.log("Detalle del error 400 de NestJS:", err.response.data);
+      }
     } finally {
       setActualizandoId(null);
     }
   };
-
   return (
     <div className="space-y-5">
       {/* Formulario de Alta de Personal */}
@@ -78,37 +121,37 @@ export default function SubVistaPersonal({ usuariosSistema, ventas, refrescarUsu
           <h4 className="text-xs font-black text-gray-800 uppercase tracking-wide">Registrar Nuevo Empleado</h4>
         </div>
         <div className="grid grid-cols-1 gap-2.5">
-          <input type="text" required placeholder="Nombre completo" value={nuevoUsuario.nombre} onChange={e => setNuevoUsuario({...nuevoUsuario, nombre: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-gray-50/50 focus:outline-none" />
-          <input type="email" required placeholder="Correo institucional" value={nuevoUsuario.email} onChange={e => setNuevoUsuario({...nuevoUsuario, email: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-gray-50/50 focus:outline-none" />
-          <input type="password" required placeholder="Contraseña de acceso" value={nuevoUsuario.password} onChange={e => setNuevoUsuario({...nuevoUsuario, password: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-gray-50/50 focus:outline-none" />
+          <input type="text" required placeholder="Nombre completo" value={nuevoUsuario.nombre} onChange={e => setNuevoUsuario({...nuevoUsuario, nombre: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-gray-50/50 focus:outline-none focus:border-[#841a40]" />
+          <input type="email" required placeholder="Correo institucional" value={nuevoUsuario.email} onChange={e => setNuevoUsuario({...nuevoUsuario, email: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-gray-50/50 focus:outline-none focus:border-[#841a40]" />
+          <input type="password" required placeholder="Contraseña de acceso" value={nuevoUsuario.password} onChange={e => setNuevoUsuario({...nuevoUsuario, password: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-gray-50/50 focus:outline-none focus:border-[#841a40]" />
           <div>
-            <select value={nuevoUsuario.rol} onChange={e => setNuevoUsuario({...nuevoUsuario, rol: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-white focus:outline-none">
+            <select value={nuevoUsuario.rol} onChange={e => setNuevoUsuario({...nuevoUsuario, rol: e.target.value})} className="w-full p-2.5 border border-gray-200 text-xs rounded-xl bg-white focus:outline-none focus:border-[#841a40]">
               <option value="VENDEDOR">Vendedor (Terminal P.V.)</option>
               <option value="DELIVERY">Repartidor / Sucursal</option>
               <option value="ADMINISTRADOR">Administrador Global</option>
             </select>
           </div>
           {nuevoUsuario.rol === 'DELIVERY' && (
-            <div className="p-3 bg-pink-50/50 border border-pink-100 rounded-xl space-y-2">
-              <input type="text" required placeholder="Nombre de la sucursal" value={nuevoUsuario.nombre_sucursal} onChange={e => setNuevoUsuario({...nuevoUsuario, nombre_sucursal: e.target.value})} className="w-full p-2.5 border border-pink-200 text-xs rounded-xl bg-white focus:outline-none" />
-              <input type="text" placeholder="Dirección física" value={nuevoUsuario.direccion} onChange={e => setNuevoUsuario({...nuevoUsuario, direccion: e.target.value})} className="w-full p-2.5 border border-pink-200 text-xs rounded-xl bg-white focus:outline-none" />
+            <div className="p-3 bg-pink-50/50 border border-pink-100 rounded-xl space-y-2 animate-fadeIn">
+              <input type="text" required placeholder="Nombre de la sucursal" value={nuevoUsuario.nombre_sucursal} onChange={e => setNuevoUsuario({...nuevoUsuario, nombre_sucursal: e.target.value})} className="w-full p-2.5 border border-pink-200 text-xs rounded-xl bg-white focus:outline-none focus:border-[#841a40]" />
+              <input type="text" placeholder="Dirección física" value={nuevoUsuario.direccion} onChange={e => setNuevoUsuario({...nuevoUsuario, direccion: e.target.value})} className="w-full p-2.5 border border-pink-200 text-xs rounded-xl bg-white focus:outline-none focus:border-[#841a40]" />
             </div>
           )}
         </div>
-        <button type="submit" className="w-full py-2.5 mt-2 rounded-xl bg-[#841a40] text-white text-xs font-bold">Dar de Alta Personal</button>
+        <button type="submit" className="w-full py-2.5 mt-2 rounded-xl bg-[#841a40] text-white text-xs font-black uppercase tracking-wider transition-colors hover:bg-[#6b1333]">
+          Dar de Alta Personal
+        </button>
       </form>
 
       {/* Listado de Personal */}
       <div className="space-y-2">
-        <p className="text-xs font-bold text-gray-500 px-1">Personal en la Red</p>
+        <p className="text-xs font-black text-gray-500 uppercase tracking-wide px-1">Personal en la Red</p>
         <div className="space-y-2.5">
           {usuariosSistema.map((user: any) => {
             const esAbierto = usuarioAbierto === user.id_usuario;
             const puedeTenerStock = user.rol === 'DELIVERY';
 
-            // =============================================================================
-            // LÓGICA DE AUDITORÍA: Filtrar y sumar todas las ventas de este Vendedor
-            // =============================================================================
+            // Auditoría cruzada de facturación histórica
             const totalVendidoPorEsteVendedor = ventas
               .filter((v: any) => Number(v.id_vendedor) === Number(user.id_usuario))
               .reduce((sum: number, v: any) => sum + parseFloat(v.precio_total_venta || 0), 0);
@@ -131,11 +174,10 @@ export default function SubVistaPersonal({ usuariosSistema, ventas, refrescarUsu
                 
                 {/* TARJETA INDIVIDUAL */}
                 <div onClick={handleToggleUsuario} className={`p-3.5 flex items-center justify-between select-none ${puedeTenerStock ? 'cursor-pointer hover:bg-gray-50/50' : 'bg-white'}`}>
-                  <div className="space-y-0.5 min-w-0">
+                  <div className="space-y-0.5 min-w-0 flex-1 pr-2">
                     <p className="text-xs font-bold text-gray-800 truncate">{user.nombre}</p>
                     <p className="text-[10px] text-gray-400 font-medium truncate">{user.email}</p>
                     
-                    {/* INDICADOR EXCLUSIVO DE RENDIMIENTO SI ES VENDEDOR */}
                     {user.rol === 'VENDEDOR' && (
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-600 font-bold bg-emerald-50 w-fit px-2 py-0.5 rounded-md border border-emerald-100">
                         <TrendingUp className="h-3 w-3" />
@@ -144,14 +186,31 @@ export default function SubVistaPersonal({ usuariosSistema, ventas, refrescarUsu
                     )}
                   </div>
                   
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider flex-shrink-0 ${user.rol === 'ADMINISTRADOR' ? 'bg-red-50 text-red-600' : user.rol === 'DELIVERY' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                    {user.rol === 'DELIVERY' ? 'Repartidor' : user.rol.toLowerCase()}
-                  </span>
+                  {/* ACCIONES Y ROLES */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider ${user.rol === 'ADMINISTRADOR' ? 'bg-red-50 text-red-600' : user.rol === 'DELIVERY' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                      {user.rol === 'DELIVERY' ? 'Repartidor' : user.rol.toLowerCase()}
+                    </span>
+
+                    {/* BOTÓN DE ELIMINACIÓN LÓGICA */}
+                    <button
+                      disabled={eliminandoId === user.id_usuario}
+                      onClick={(e) => handleEliminarUsuario(e, user.id_usuario, user.nombre)}
+                      className="p-1.5 rounded-lg border border-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors focus:outline-none"
+                      title="Dar de baja empleado"
+                    >
+                      {eliminandoId === user.id_usuario ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-red-500" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* ACORDEÓN DE EDICIÓN DE STOCK (Sólo Deliveries) */}
                 {esAbierto && puedeTenerStock && (
-                  <div className="bg-gray-50 border-t border-gray-100 p-3 space-y-2">
+                  <div className="bg-gray-50 border-t border-gray-100 p-3 space-y-2 animate-fadeIn">
                     {stocksUsuario.length === 0 ? (
                       <p className="text-[11px] text-gray-400 py-1.5 italic text-center">Cargando almacén en Postgres...</p>
                     ) : (

@@ -112,8 +112,15 @@ export class UsuariosService {
    * BORRADO LÓGICO (Soft Delete usando deleted_at)
    */
   async eliminarUsuario(id: number): Promise<{ mensaje: string }> {
-    const usuario = await this.obtenerUsuarioPorId(id);
-    await this.usuarioRepository.softDelete(usuario.id_usuario);
-    return { mensaje: `Usuario '${usuario.nombre}' deshabilitado lógicamente con éxito.` };
+    // Verificamos primero si existe
+    const usuario = await this.usuarioRepository.findOne({ where: { id_usuario: id } });
+    if (!usuario) {
+      throw new NotFoundException(`El usuario con ID ${id} no existe.`);
+    }
+
+    // El softDelete NO borra la fila; llena el campo 'deleted_at' automáticamente
+    await this.usuarioRepository.softDelete(id);
+
+    return { mensaje: `El empleado ${usuario.nombre} fue dado de baja del sistema correctamente.` };
   }
 }

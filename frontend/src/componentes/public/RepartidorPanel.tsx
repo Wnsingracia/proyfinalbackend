@@ -5,6 +5,10 @@ import { Truck, LogOut, Moon, Bell, PlusCircle, FileText, DollarSign, Shield } f
 import VistaNuevaEntrega from '../Repartidor/VistaNuevaEntrega';
 import VistaVendedores from '../Vendedor/Vistavendedores';
 import VistaDeliveries from '../Repartidor/VistaDeliveries';
+
+// =============================================================================
+// 🛠️ CORRECCIÓN EN RUTA DE IMPORTACIÓN: Alineado al nombre físico real
+// =============================================================================
 import VistaAdministrarUsuarios from '../Admin/VistaAdministradorUsuario';
 
 interface RepartidorPanelProps {
@@ -23,39 +27,49 @@ export default function RepartidorPanel({ alCerrarSesion }: RepartidorPanelProps
     return 'NUEVA_ENTREGA';
   });
 
-  // =============================================================================
-  // 1. NUEVOS ESTADOS PARA HACER LA CARGA REAL DE LA BASE DE DATOS
-  // =============================================================================
+  // ESTADOS PARA INVENTARIO Y USUARIOS DE LA BASE DE DATOS
   const [stockReal, setStockReal] = useState<any[]>([]);
+  const [usuariosSistema, setUsuariosSistema] = useState<any[]>([]); // <── NUEVO: Nómina real de Postgres
   const [cargandoStock, setCargandoStock] = useState(true);
 
+  // =============================================================================
+  // ⚡ SINK: Carga en lote del Inventario y de los Usuarios del Sistema
+  // =============================================================================
   useEffect(() => {
-    const obtenerInventarioBD = async () => {
+    const cargarDatosDesdeBD = async () => {
       try {
         setCargandoStock(true);
         
-        // Atacamos el endpoint de tu backend que trae el stock específico del repartidor actual
-        const respuesta = await api.get(`/deliveries/${usuarioLogueado.id_usuario}/stock`);
+        // Ejecutamos ambas peticiones en paralelo para no ralentizar el entorno móvil
+        const [resStock, resUsers] = await Promise.all([
+          api.get(`/deliveries/${usuarioLogueado.id_usuario}/stock`),
+          api.get('/usuarios') // Jalamos la lista general de usuarios
+        ]);
         
-        setStockReal(respuesta.data); // Guardamos la lista con las nuevas url_imagen de la BD
+        setStockReal(resStock.data);
+        setUsuariosSistema(resUsers.data); // Seteamos los vendedores en memoria
       } catch (error) {
-        console.error("Error al sincronizar inventario con PostgreSQL:", error);
+        console.error("Error al sincronizar datos del panel con PostgreSQL:", error);
       } finally {
         setCargandoStock(false);
       }
     };
 
-    // Solo hacemos la consulta si el usuario es un DELIVERY o un ADMINISTRADOR auditor
     if (usuarioLogueado.rol === 'DELIVERY' || usuarioLogueado.rol === 'ADMINISTRADOR') {
-      obtenerInventarioBD();
+      cargarDatosDesdeBD();
     }
   }, [usuarioLogueado.id_usuario]);
 
-  // Lógica de cierre de sesión
+  // Lógica de cierre de sesión blindada
   const handleLogout = () => {
     localStorage.removeItem('token_ryztor');
     localStorage.removeItem('usuario_ryztor');
-    alCerrarSesion();
+    
+    if (typeof alCerrarSesion === 'function') {
+      alCerrarSesion();
+    } else {
+      window.location.reload();
+    }
   };
 
   return (
@@ -118,9 +132,7 @@ export default function RepartidorPanel({ alCerrarSesion }: RepartidorPanelProps
               </button>
             )}
 
-            {/* =============================================================================
-                3. BOTÓN CRÍTICO DE ADMINISTRACIÓN: ¡SÓLO SI ES ADMINISTRADOR!
-               ============================================================================= */}
+            {/* 3. BOTÓN CRÍTICO DE ADMINISTRACIÓN: ¡SÓLO SI ES ADMINISTRADOR! */}
             {usuarioLogueado.rol === 'ADMINISTRADOR' && (
               <button 
                 type="button" 
@@ -138,12 +150,15 @@ export default function RepartidorPanel({ alCerrarSesion }: RepartidorPanelProps
         <main className="flex-1 p-4 overflow-y-auto">
           {vistaActual === 'NUEVA_ENTREGA' && (
             cargandoStock ? (
-              <div className="text-center py-10 text-xs text-gray-400 font-medium">Sincronizando inventario con la base de datos...</div>
+              <div className="text-center py-10 text-xs text-gray-400 font-medium">Sincronizando información de la base de datos...</div>
             ) : (
               // =============================================================================
-              // 2. CORRECCIÓN: Le inyectamos 'stockReal' traído de Postgres en lugar del arreglo viejo
+              // 🏁 INTEGRACIÓN CORREGIDA: Sincronizamos stock Real y el catálogo de usuarios
               // =============================================================================
-              <VistaNuevaEntrega stockDisponible={stockReal} />
+              <VistaNuevaEntrega 
+                stockDisponible={stockReal} 
+                usuariosSistema={usuariosSistema} 
+              />
             )
           )}
           {vistaActual === 'VENDEDORES' && <VistaVendedores />}
@@ -152,13 +167,7 @@ export default function RepartidorPanel({ alCerrarSesion }: RepartidorPanelProps
         </main>
 
         {/* ACCIÓN FIJA INFERIOR */}
-        {vistaActual === 'NUEVA_ENTREGA' && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100">
-            <button type="button" className="w-full py-4 rounded-xl bg-[#c58599] hover:bg-[#b06f83] text-white font-semibold text-base transition-colors flex items-center justify-center gap-2 shadow-md">
-              <span>✓</span> Confirmar Entrega
-            </button>
-          </div>
-        )}
+        
 
       </div>
     </div>

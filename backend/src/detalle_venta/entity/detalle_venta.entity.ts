@@ -20,8 +20,7 @@ export class DetalleVenta {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.00 })
   precio_subtotal: number = 0;
 
-  // RELACIONES
-  @ManyToOne(() => Venta, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Venta, (venta) => venta.productos, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'id_venta' })
   venta!: Venta;
 

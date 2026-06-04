@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
+import { DetalleVenta } from 'src/detalle_venta/entity/detalle_venta.entity';
 
 @Entity('ventas')
 export class Venta {
@@ -19,4 +20,7 @@ export class Venta {
 
   @DeleteDateColumn({ type: 'timestamp with time zone', nullable: true })
   deleted_at?: Date;
+
+  @OneToMany(() => DetalleVenta, (detalle) => detalle.venta, { cascade: true })
+  productos!: DetalleVenta[];
 }

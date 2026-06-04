@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../api/api';// Tu instancia centralizada de Axios
+import api from '../../api/api'; // Tu instancia centralizada de Axios
 
 interface LoginProps {
   alIngresar: (usuario: { id_usuario: number; nombre: string; rol: string }) => void;
@@ -65,7 +65,6 @@ export const LoginPanel: React.FC<LoginProps> = ({ alIngresar }) => {
     } catch (err: any) {
       // 6. Captura de errores devueltos por class-validator o NestJS
       if (err.response && err.response.data) {
-        // Si el class-validator devuelve un array de mensajes o un string directo
         const mensajeError = Array.isArray(err.response.data.message)
           ? err.response.data.message[0]
           : err.response.data.message;
@@ -75,7 +74,6 @@ export const LoginPanel: React.FC<LoginProps> = ({ alIngresar }) => {
         setError('No hay conexión con el servidor backend');
       }
       
-      // Refrescamos campos críticos por seguridad
       generarCaptcha();
       setCaptchaInput('');
     } finally {
@@ -84,65 +82,74 @@ export const LoginPanel: React.FC<LoginProps> = ({ alIngresar }) => {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-md p-6 bg-[#0f0e15] rounded-2xl border border-slate-800/80 shadow-xl">
-      <h2 className="text-2xl font-bold text-white text-center mb-6">Iniciar Sesión</h2>
+    /* 🛠️ CAMBIOS EXPLICADOS PARA MÓVILES RESPONSIVO:
+      - 'w-[92%]' o 'w-full': Evita que en pantallas chicas choque contra los bordes físicos del celular.
+      - 'sm:max-w-md': En computadoras de escritorio se frena elegantemente en el tamaño original (448px).
+      - 'p-5 sm:p-7': Padding interno más compacto en celulares para aprovechar el espacio de pantalla.
+    */
+    <div className="w-[92%] sm:w-full sm:max-w-md p-5 sm:p-7 bg-[#0f0e15] rounded-3xl border border-slate-800/80 shadow-2xl animate-fadeIn mx-auto">
+      <h2 className="text-xl sm:text-2xl font-black text-white text-center mb-6 tracking-wide">
+        Iniciar Sesión
+      </h2>
       
       {error && (
-        <div className="p-3 mb-4 text-sm text-red-400 bg-red-950/30 border border-red-900/50 rounded-xl">
+        <div className="p-3 mb-4 text-xs sm:text-sm text-red-400 bg-red-950/20 border border-red-900/40 rounded-xl animate-shake">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Input Email */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">Correo Electrónico</label>
+        <div className="space-y-1">
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Correo Electrónico</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 rounded-xl bg-[#161520] border border-slate-800 text-white text-sm focus:outline-none focus:border-[#c2185b]"
+            className="w-full p-3.5 rounded-xl bg-[#161520] border border-slate-800 text-white text-sm focus:outline-none focus:border-[#c2185b] focus:bg-[#1c1a29] transition-all placeholder:text-slate-600"
             placeholder="ejemplo@ryztor.com"
             required
           />
         </div>
 
         {/* Input Password */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">Contraseña</label>
+        <div className="space-y-1">
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Contraseña</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 rounded-xl bg-[#161520] border border-slate-800 text-white text-sm focus:outline-none focus:border-[#c2185b]"
+            className="w-full p-3.5 rounded-xl bg-[#161520] border border-slate-800 text-white text-sm focus:outline-none focus:border-[#c2185b] focus:bg-[#1c1a29] transition-all placeholder:text-slate-600"
             placeholder="••••••••"
             required
           />
         </div>
 
         {/* Bloque CAPTCHA Visual */}
-        <div className="p-3 rounded-xl bg-[#161520] border border-slate-800 flex items-center justify-between">
-          <span className="text-lg font-mono font-bold tracking-widest text-[#c2185b] select-none line-through decoration-slate-600">
-            {captchaText}
-          </span>
-          <button
-            type="button"
-            onClick={generarCaptcha}
-            className="text-xs text-slate-400 hover:text-white transition-colors"
-          >
-            Refrescar
-          </button>
+        <div className="space-y-1">
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Verificación de Seguridad</label>
+          <div className="p-3 rounded-xl bg-[#161520] border border-slate-800 flex items-center justify-between">
+            <span className="text-xl font-mono font-black tracking-widest text-[#c2185b] select-none line-through decoration-slate-600/60">
+              {captchaText}
+            </span>
+            <button
+              type="button"
+              onClick={generarCaptcha}
+              className="text-[11px] font-bold bg-slate-800/50 px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              Refrescar
+            </button>
+          </div>
         </div>
 
         {/* Input CAPTCHA */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1">Código de Seguridad</label>
+        <div className="space-y-1">
           <input
             type="text"
             value={captchaInput}
             onChange={(e) => setCaptchaInput(e.target.value)}
-            className="w-full p-3 rounded-xl bg-[#161520] border border-slate-800 text-white text-sm font-mono uppercase tracking-wider focus:outline-none focus:border-[#c2185b]"
-            placeholder="Introduce el código"
+            className="w-full p-3.5 rounded-xl bg-[#161520] border border-slate-800 text-white text-sm font-mono uppercase tracking-wider focus:outline-none focus:border-[#c2185b] focus:bg-[#1c1a29] transition-all placeholder:text-slate-600 text-center"
+            placeholder="Introduce el código CAPTCHA"
             required
           />
         </div>
@@ -151,9 +158,9 @@ export const LoginPanel: React.FC<LoginProps> = ({ alIngresar }) => {
         <button
           type="submit"
           disabled={cargando}
-          className="w-full p-3 mt-2 rounded-xl bg-[#c2185b] text-white font-bold text-sm hover:bg-[#a0134c] transition-colors disabled:opacity-50"
+          className="w-full p-3.5 mt-3 rounded-xl bg-[#c2185b] hover:bg-[#a0134c] text-white font-black text-xs sm:text-sm uppercase tracking-wider transition-colors shadow-lg shadow-[#c2185b]/10 disabled:opacity-50 select-none"
         >
-          {cargando ? 'Validando...' : 'Ingresar al Sistema'}
+          {cargando ? 'Validando Credenciales...' : 'Ingresar al Sistema'}
         </button>
       </form>
     </div>
