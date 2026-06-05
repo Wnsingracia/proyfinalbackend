@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../api/api';
-import { FileText, User, Calendar, DollarSign, RefreshCcw, Wallet, Percent } from 'lucide-react';
+import { FileText, User, Calendar, RefreshCcw, Wallet } from 'lucide-react';
 
 export default function VistaVendedores() {
   const [ventas, setVentas] = useState<any[]>([]);

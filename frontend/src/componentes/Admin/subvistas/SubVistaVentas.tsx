@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import api from '../../../api/api'; // Tu instancia de Axios configurada
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import api from '../../api/api'; // Tu instancia de Axios configurada
 import { Search, List, ChevronDown, Plus, Minus, ShoppingBag, User, Edit2, X, Check } from 'lucide-react';
 

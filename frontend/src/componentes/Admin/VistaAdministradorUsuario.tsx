@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../api/api';
 import { DollarSign, Users, PlusCircle, BarChart3 } from 'lucide-react';
 
@@ -8,7 +8,7 @@ import SubVistaPersonal from './subvistas/SubVistaPersonal';
 import SubVistaCatalogo from './subvistas/SubVistaCatalogo';
 import SubVistaEstadisticas from './subvistas/SubVistaEstadisticas';
 
-export default function VistaAdministrarUsuarios({ usuario }: { usuario: any }) {
+export default function VistaAdministrarUsuarios() {
   // Inicializa directo en USUARIOS para que el personal sea lo primero que vea el Administrador
   const [subVista, setSubVista] = useState<'VENTAS' | 'USUARIOS' | 'PRODUCTOS'| 'ESTADISTICAS'>('USUARIOS');
   const [ventas, setVentas] = useState<any[]>([]);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../api/api'; // Tu instancia de Axios configurada
 import { Truck, LogOut, Moon, Bell, PlusCircle, FileText, DollarSign, Shield } from 'lucide-react';
 
