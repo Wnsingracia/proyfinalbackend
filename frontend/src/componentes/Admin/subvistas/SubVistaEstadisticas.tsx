@@ -143,7 +143,7 @@ export default function SubVistaEstadisticas({ ventas = [] }: { ventas: any[] })
                   contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #f3f4f6', fontSize: '11px', fontWeight: 'bold' }}
                 />
                 <Bar dataKey="cantidad" radius={[0, 8, 8, 0]} barSize={14}>
-                  {datosGrafico.map((entry, index) => (
+                  {datosGrafico.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={coloresBarras[index % coloresBarras.length]} />
                   ))}
                 </Bar>

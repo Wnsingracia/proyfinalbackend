@@ -8,7 +8,7 @@ import SubVistaPersonal from './subvistas/SubVistaPersonal';
 import SubVistaCatalogo from './subvistas/SubVistaCatalogo';
 import SubVistaEstadisticas from './subvistas/SubVistaEstadisticas';
 
-export default function VistaAdministrarUsuarios() {
+export default function VistaAdministrarUsuarios({ usuario }: { usuario: any }) {
   // Inicializa directo en USUARIOS para que el personal sea lo primero que vea el Administrador
   const [subVista, setSubVista] = useState<'VENTAS' | 'USUARIOS' | 'PRODUCTOS'| 'ESTADISTICAS'>('USUARIOS');
   const [ventas, setVentas] = useState<any[]>([]);
@@ -55,6 +55,13 @@ export default function VistaAdministrarUsuarios() {
 
   return (
     <div className="space-y-4 animate-fadeIn pb-6">
+
+      <div className="flex justify-between items-center px-1">
+        <h1 className="text-sm font-bold text-gray-800">Panel de Control General</h1>
+        <span className="text-[11px] text-gray-400 font-medium">
+          Admin: <strong className="text-gray-700">{usuario?.nombre || 'Operador'}</strong>
+        </span>
+      </div>
       
       {/* SELECTOR DE SUB-PESTAÑAS SUPERIOR */}
       <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200 gap-0.5">
