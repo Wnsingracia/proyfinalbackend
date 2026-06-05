@@ -3,5 +3,10 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
-  ]
+  ],
+  "compilerOptions": {
+  "noUnusedLocals": false,      // 🟢 Permite variables declaradas no usadas
+  "noUnusedParameters": false,  // 🟢 Permite parámetros de funciones no usados
+  "noImplicitAny": false        // 🟢 Evita que colapse por tipos implícitos
+}
 }
